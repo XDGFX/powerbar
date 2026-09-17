@@ -68,7 +68,7 @@ def rgb(hexc):
     return bytes((int(hexc[0:2], 16), int(hexc[2:4], 16), int(hexc[4:6], 16)))
 
 def area_chart(vals, W, H, hexc, lo=None, hi=None):
-    """Filled area chart, right-aligned so the latest sample is at the edge."""
+    """Filled area chart of the whole history, latest sample at the right edge."""
     S = 2
     w, h = W * S, H * S
     c = rgb(hexc)
@@ -81,14 +81,11 @@ def area_chart(vals, W, H, hexc, lo=None, hi=None):
     if hi is None:
         hi = vmax + 0.1 * (vmax - vmin or 1)
     span = max(hi - lo, 1e-6)
-    # the canvas is one full history window (KEEP samples) wide, latest at the
-    # right edge; a shorter history leaves the left empty rather than stretching
+    # whatever history exists is stretched across the full width, latest at
+    # the right edge; the caption says how long the window is
     n = len(vals)
     scaled = [int(round((min(max(v, lo), hi) - lo) / span * (h - 1))) for v in vals]
-    heights = []
-    for x in range(w):
-        i = x * KEEP // w - (KEEP - n)
-        heights.append(scaled[i] if i >= 0 else -1)
+    heights = [scaled[x * n // w] for x in range(w)]
     rows = []
     for y in range(h):
         depth = h - 1 - y                # 0 at the bottom
