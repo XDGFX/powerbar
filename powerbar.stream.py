@@ -43,6 +43,12 @@ MONO = "font=Menlo size=11"
 BLUE, GREEN, AMBER, RED = "0a84ff", "30d158", "ffd60a", "ff453a"
 ORANGE, PURPLE, TEAL, GREY = "ff9f0a", "bf5af2", "64d2ff", "636366"
 
+# Rows that have somewhere relevant to go. Headings carry their symbol inline
+# (:name:) rather than as sfimage=, because SwiftBar tints an sfimage with the
+# row's light-mode colour and near-black vanishes on a dark menu.
+BATTERY_SETTINGS = "bash=/usr/bin/open param1=x-apple.systempreferences:com.apple.Battery-Settings-extension terminal=false"
+ACTIVITY_MONITOR = "bash=/usr/bin/open param1=-a param2='Activity Monitor' terminal=false"
+
 # --- PNG drawing (pure stdlib) ----------------------------------------------
 # Everything is drawn at 2x and told to SwiftBar at 1x (width=/height=) so it
 # is crisp on Retina.
@@ -75,14 +81,14 @@ def area_chart(vals, W, H, hexc, lo=None, hi=None):
     if hi is None:
         hi = vmax + 0.1 * (vmax - vmin or 1)
     span = max(hi - lo, 1e-6)
-    # one bar per sample, each SAMPLE_S wide; history shorter than the canvas
-    # leaves the left empty rather than stretching
+    # the canvas is one full history window (KEEP samples) wide, latest at the
+    # right edge; a shorter history leaves the left empty rather than stretching
     n = len(vals)
-    cols_per = max(1, w // KEEP)
+    scaled = [int(round((min(max(v, lo), hi) - lo) / span * (h - 1))) for v in vals]
     heights = []
-    for v in vals[-(w // cols_per):]:
-        heights += [int(round((min(max(v, lo), hi) - lo) / span * (h - 1)))] * cols_per
-    heights = [-1] * (w - len(heights)) + heights[-w:]
+    for x in range(w):
+        i = x * KEEP // w - (KEEP - n)
+        heights.append(scaled[i] if i >= 0 else -1)
     rows = []
     for y in range(h):
         depth = h - 1 - y                # 0 at the bottom
@@ -221,7 +227,7 @@ def render(mm, b, hist, procs, cost):
     o.append("---")
 
     if mm:
-        o.append(f"Power | {HEAD} size=13 sfimage=bolt.circle.fill")
+        o.append(f":bolt.circle.fill: Power | {HEAD} size=13 sfsize=13 {ACTIVITY_MONITOR}")
         o.append(f"{mm['sys_w']:5.1f} W  system | {MONO} {BODY}")
         o.append(f"{mm['pkg_w']:5.1f} W  package | {MONO} {BODY}")
         pk = max(mm["pkg_w"], 1e-6)
@@ -245,12 +251,12 @@ def render(mm, b, hist, procs, cost):
     else:
         state, icon = "Discharging", "battery.50percent"
     col = GREEN if on_ac else (RED if b["pct"] <= 20 else AMBER)
-    o.append(f"Battery {b['pct']}%  ·  {state} | {HEAD} size=13 sfimage={icon}")
+    o.append(f":{icon}: Battery {b['pct']}%  ·  {state} | {HEAD} size=13 sfsize=13 {BATTERY_SETTINGS}")
     if not on_ac:
         o.append(f"{-b['watts']:5.1f} W  from battery  ·  {eta(b['mins'])} remaining | {MONO} color=#{col}")
     elif b["charging"]:
         o.append(f"{b['watts']:5.1f} W  into battery  ·  full in {eta(b['mins'])} | {MONO} color=#{col}")
-    o.append(f"Health {b['health']}%  ·  {b['raw_max']} / {b['design']} mAh design  ·  {b['cycles']} cycles | {MONO} {DIM}")
+    o.append(f"Health {b['health']}%  ·  {b['raw_max']} / {b['design']} mAh design  ·  {b['cycles']} cycles | {MONO} {DIM} {BATTERY_SETTINGS}")
     o.append(f"Cell {b['cell_c']:.1f} °C  ·  {b['mv']/1000:.2f} V  ·  {b['ma']} mA | {MONO} {DIM}")
     if b["adapter"]:
         o.append(f"Adapter  {b['adapter']}  ·  {b['adapter_w']} W | {MONO} {DIM} sfimage=powerplug.fill")
@@ -259,7 +265,7 @@ def render(mm, b, hist, procs, cost):
     o.append("---")
 
     if mm:
-        o.append(f"Thermals | {HEAD} size=13 sfimage=thermometer.medium")
+        o.append(f":thermometer.medium: Thermals | {HEAD} size=13 sfsize=13")
         o.append(f"CPU {mm['cpu_c']:.0f} °C  ·  GPU {mm['gpu_c']:.0f} °C  ·  battery {b['cell_c']:.1f} °C | {MONO} {BODY}")
         if mm["fans"]:
             fans = "   ".join(f"{r:.0f} / {mx:.0f}" for r, mx in mm["fans"])
@@ -271,10 +277,10 @@ def render(mm, b, hist, procs, cost):
         o.append(f"CPU temperature, last hour · {stats(6, hist)} °C | size=10 {DIM}")
         o.append("---")
 
-    o.append(f"Top processes by CPU | {HEAD} size=13 sfimage=cpu")
+    o.append(f":cpu: Top processes by CPU | {HEAD} size=13 sfsize=13 {ACTIVITY_MONITOR}")
     for cpu, name in procs:
-        o.append(f"{cpu:5.0f}%  {name[:34]} | {MONO} {DIM} trim=false")
-    o.append(f"Open Activity Monitor | bash=/usr/bin/open param1=-a param2='Activity Monitor' terminal=false {DIM}")
+        o.append(f"{cpu:5.0f}%  {name[:34]} | {MONO} {DIM} trim=false {ACTIVITY_MONITOR}")
+    o.append(f"Open Activity Monitor | {DIM} {ACTIVITY_MONITOR}")
     o.append("---")
     o.append(f"PowerBar itself: {cost:.0f} ms CPU per {SAMPLE_S} s sample  ·  {cost / (SAMPLE_S * 10):.2f}% of one core | size=10 {DIM}")
     return "\n".join(o)
