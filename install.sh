@@ -28,19 +28,27 @@ fi
 
 chmod +x "$SCRIPT_DIR/$PLUGIN"
 
-# If SwiftBar already has a plugin folder, copy the plugin into it — a copy,
-# not a symlink, because SwiftBar's folder-watcher is unreliable with
-# symlinks. Otherwise point SwiftBar at this clone, so future `git pull`s
-# update the plugin in place.
+# SwiftBar runs every executable file in its plugin folder, so that folder
+# must hold plugins and nothing else. Pointing it at this clone — which is
+# what this script used to do — makes SwiftBar run LICENSE, README.md and
+# install.sh as plugins too. Each one claims a menu bar slot, and once the
+# bar is full macOS silently drops the overflow, so the real plugin never
+# appears. Install into a dedicated folder instead, reusing whichever folder
+# SwiftBar already points at unless that folder is this clone.
 existing=$(defaults read com.ameba.SwiftBar PluginDirectory 2>/dev/null || true)
 if [ -n "$existing" ] && [ "$existing" != "$SCRIPT_DIR" ]; then
-    cp "$SCRIPT_DIR/$PLUGIN" "$existing/"
-    chmod +x "$existing/$PLUGIN"
-    echo "Plugin copied into $existing (re-run this script after a git pull to update)."
+    plugin_dir="$existing"
 else
-    defaults write com.ameba.SwiftBar PluginDirectory "$SCRIPT_DIR"
-    echo "SwiftBar plugin folder set to $SCRIPT_DIR."
+    plugin_dir="${XDG_CONFIG_HOME:-$HOME/.config}/swiftbar"
 fi
+mkdir -p "$plugin_dir"
+
+# Symlinked rather than copied, so `git pull` updates the plugin in place.
+# SwiftBar's folder-watcher doesn't reliably see edits through a symlink, so
+# a pull wants a SwiftBar restart rather than a refresh.
+ln -sfn "$SCRIPT_DIR/$PLUGIN" "$plugin_dir/$PLUGIN"
+defaults write com.ameba.SwiftBar PluginDirectory "$plugin_dir"
+echo "Plugin linked into $plugin_dir."
 
 # Start at login, added only once.
 if ! osascript -e 'tell application "System Events" to get the name of every login item' 2>/dev/null | grep -q SwiftBar; then
@@ -50,10 +58,16 @@ fi
 # Launch only if not already running: on macOS 26 a reopen event makes
 # SwiftBar show its "SwiftBar is already running" menu-bar recovery alert.
 # A streaming plugin is started once by SwiftBar, so an already-running
-# SwiftBar needs a refresh to pick up a copied or updated plugin.
-if pgrep -xq SwiftBar; then
-    open -g 'swiftbar://refreshallplugins'
-else
+# SwiftBar needs a nudge to pick up a new or updated plugin — a refresh is
+# enough for a plugin added to the folder SwiftBar is already watching, but
+# a change of folder is only read at launch, so that needs a restart.
+if ! pgrep -xq SwiftBar; then
     open -a SwiftBar
+elif [ "$plugin_dir" != "$existing" ]; then
+    pkill -x SwiftBar || true
+    for _ in 1 2 3 4 5; do pgrep -xq SwiftBar || break; sleep 1; done
+    open -a SwiftBar
+else
+    open -g 'swiftbar://refreshallplugins'
 fi
 echo "Done — look for the watts figure in your menu bar."

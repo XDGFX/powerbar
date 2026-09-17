@@ -70,8 +70,14 @@ cd powerbar && bash install.sh
 ```
 
 The script installs SwiftBar and macmon if they're missing, wires the plugin
-in (pointing SwiftBar at the clone, so `git pull` updates it in place), and
-sets SwiftBar to start at login. There is no configuration.
+in and sets SwiftBar to start at login. There is no configuration.
+
+The plugin is symlinked into a dedicated SwiftBar plugin folder
+(`~/.config/swiftbar`, or whichever folder SwiftBar already uses), so
+`git pull` updates it in place — restart SwiftBar afterwards to pick the
+change up. The clone itself is deliberately not used as the plugin folder:
+SwiftBar runs *every* executable file in that folder, so it would try to run
+`LICENSE` and `README.md` as plugins as well.
 
 ## Where the numbers come from
 
