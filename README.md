@@ -22,9 +22,30 @@ Apple silicon only. No root, no sudoers, no kernel extension.
   if macOS is throttling the scheduler.
 - **Top processes** by CPU, and a shortcut to Activity Monitor.
 - **Graphs** — the last hour of system power, battery charge and CPU
-  temperature, with min / avg / max. History persists across restarts.
+  temperature, with min / avg / max. Drawn in the style of Battery
+  Settings: a translucent area under a connected polyline, dotted rules
+  quartering the plot, a solid axis along the bottom, and the periods spent
+  charging tinted behind the charge trace. History persists across restarts.
 - **Its own cost** — the last row shows how much CPU the plugin itself used
   for the current sample.
+
+Data rows are set on a fixed character grid, so a value never shifts when it
+changes width. That needs a monospaced font — the system font's digits are
+not tabular, and SwiftBar's only other column tool is a tab stop hardcoded
+every 100 pt. Monaco at 12 pt is the narrowest fixed-pitch face that also
+sits right: a menu row's text area is 16 pt and a shorter line is set at the
+top of it rather than the middle, so anything shorter rides high, and Monaco
+12 sets exactly 16 pt. The charts are drawn as wide as the widest row, so
+they span the menu rather than stopping short.
+
+The battery rows open the Battery settings pane and the process rows open
+Activity Monitor. Nothing else is clickable: Activity Monitor opens on
+whichever tab you last used and offers no way to choose one, and macOS has no
+thermal UI at all, so a link from the power or thermal rows would only ever
+land somewhere irrelevant. Every row still highlights under the pointer
+regardless — SwiftBar attaches an action to any row carrying a colour, purely
+so macOS draws it enabled, and going without the colour to suppress that
+fades the text too much to be worth it.
 
 ## How it's kept cheap
 
@@ -40,7 +61,10 @@ SwiftBar starts once and that stays resident. It holds a single `macmon pipe`
 open for its lifetime, so the setup cost is paid once, and each sample is one
 line read from that pipe, one `ioreg` dump, one `ps` listing and three small
 PNGs drawn in-process with the standard library (no ImageMagick, no pip
-packages). Measured on an M4 Pro:
+packages). The charts are antialiased analytically — each pixel's coverage
+comes from where the trace falls inside it, rather than from supersampling —
+and the area's pixels come out of small lookup tables, so all four images
+together cost about a millisecond. Measured on an M4 Pro:
 
 | | CPU per 10 s sample |
 |---|---|
