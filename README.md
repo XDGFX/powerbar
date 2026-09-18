@@ -8,8 +8,8 @@ Apple silicon only. No root, no sudoers, no kernel extension.
 
 ## What it shows
 
-- **Menu bar** — live system draw in watts on mains (`⚡ 24 W`), battery
-  percentage on battery.
+- **Menu bar** — live system draw in watts (`⚡ 24 W`), on mains and on
+  battery alike.
 - **Power** — system and package watts, with the package split across CPU,
   GPU, Neural Engine and RAM. Utilisation and clock speed per cluster
   (efficiency and performance cores separately), GPU frequency, RAM and swap

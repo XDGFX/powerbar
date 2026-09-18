@@ -1,7 +1,7 @@
 #!/usr/bin/env -S PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin python3
 # PowerBar — a SwiftBar plugin for Mac power, battery and thermals.
 #
-# Menu bar: live system draw in watts on mains, battery percent on battery.
+# Menu bar: live system draw in watts, on mains and on battery alike.
 # Dropdown: package power split across CPU, GPU, ANE and RAM with utilisation
 # and clocks; battery charge, health, cycles, cell temperature, time
 # remaining and the charger; CPU/GPU temperatures and fans; the processes
@@ -399,10 +399,10 @@ def render(mm, b, hist, procs, cost):
         art.append((len(o), stacked_bar, parts, H, (), {}))
         o.append("")
 
-    # menu bar
+    # menu bar: system draw in watts, on mains or on battery alike. The charge
+    # percent is already in macOS's own battery item, so it is not repeated here.
     if mm:
-        o.append(f":bolt.fill: {mm['sys_w']:.0f} W | sfsize=12" if on_ac
-                 else f":battery.50percent: {b['pct']}% | sfsize=12")
+        o.append(f":bolt.fill: {mm['sys_w']:.0f} W | sfsize=12")
     else:
         o.append(f":battery.50percent: {b['pct']}% | sfsize=12")
     o.append("---")
