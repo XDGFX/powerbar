@@ -465,6 +465,8 @@ def render(mm, b, hist, procs, cost):
     o.append(f"Open Activity Monitor | {DIM} {ACTIVITY_MONITOR}")
     o.append("---")
     o.append(f"PowerBar itself: {cost:.0f} ms CPU per {SAMPLE_S} s sample  ·  {cost / (SAMPLE_S * 10):.2f}% of one core | {CAPTION} {DIM}")
+    o.append("---")
+    o.append(f":heart: Sponsor PowerBar | {DIM} href=https://github.com/sponsors/XDGFX")
 
     cells = max((len(r.split(" | ")[0]) for r in o if MONO in r), default=52)
     W = int(cells * PITCH)
