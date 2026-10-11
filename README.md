@@ -127,6 +127,11 @@ SwiftBar runs *every* executable file in that folder, so it would try to run
   via the plugin's metadata; to also hide SwiftBar's app icon from the menu
   bar, untick it in SwiftBar's preferences.
 
+## Support
+
+PowerBar is free and open source. If it saved you some time, you can
+[sponsor me on GitHub](https://github.com/sponsors/XDGFX).
+
 ## Licence
 
 MIT.
